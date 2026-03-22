@@ -65,7 +65,7 @@ export default function LeaderboardPage() {
             </div>
 
             <div className="glass-card overflow-x-auto">
-                <table className="w-full text-left min-w-[400px]">
+                <table className="w-full text-left">
                     <thead>
                         <tr className="border-b border-slate-100 bg-slate-50/50">
                             <th className="px-4 md:px-6 py-3 md:py-4 font-bold text-slate-600 text-xs md:text-sm uppercase tracking-wider">Rank</th>
@@ -85,8 +85,8 @@ export default function LeaderboardPage() {
                                         {index + 1}
                                     </span>
                                 </td>
-                                <td className="px-4 md:px-6 py-3 md:py-4">
-                                    <div className="font-bold text-slate-800 text-sm md:text-base">{profile.display_name}</div>
+                                <td className="px-4 md:px-6 py-3 md:py-4 max-w-[120px] md:max-w-none">
+                                    <div className="font-bold text-slate-800 text-sm md:text-base truncate" title={profile.display_name}>{profile.display_name}</div>
                                 </td>
                                 <td className="px-4 md:px-6 py-3 md:py-4 text-right">
                                     <span className="text-lg md:text-xl font-black text-indigo-600">{profile.total_points}</span>
