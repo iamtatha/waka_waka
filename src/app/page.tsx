@@ -61,12 +61,21 @@ export default function Home() {
 
   return (
     <div className="space-y-8 md:space-y-12 px-2 md:px-0">
-      <section className="text-center space-y-3 md:space-y-4 pt-10 md:pt-20">
-        <h1 className="text-4xl md:text-7xl font-extrabold gradient-text tracking-tight">World Cup 2026</h1>
-        <p className="text-sm md:text-xl text-slate-500 max-w-xl mx-auto px-4 leading-relaxed">
-          Predict the scores, climb the leaderboard, and claim your glory.
-          The ultimate prediction contest is here.
-        </p>
+      <section className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-12 max-w-6xl mx-auto">
+        <div className="w-[90%] md:w-1/2 flex justify-center md:justify-end">
+          <img
+            src="/brand_2.png"
+            alt="Waka Waka Brand"
+            className="w-full h-auto object-contain drop-shadow-xl"
+          />
+        </div>
+        <div className="w-full md:w-1/2 space-y-3 md:space-y-4 text-center md:text-left flex flex-col items-center md:items-start">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold gradient-text tracking-tight">World Cup 2026</h1>
+          <p className="text-sm md:text-xl text-slate-500 max-w-md px-4 md:px-0 leading-relaxed">
+            Predict the scores, climb the leaderboard, and claim your glory.
+            The ultimate prediction contest is here.
+          </p>
+        </div>
       </section>
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
