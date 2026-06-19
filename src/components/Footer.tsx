@@ -20,7 +20,7 @@ export default function Footer() {
                             <span className="font-bold text-indigo-600">1 pt:</span> Correct total goals
                         </li>
                         <li className="pt-2 text-[10px] md:text-xs italic text-slate-400 border-t border-slate-50">
-                            * Predictions must be before kickoff. Latest submission counts.
+                            * Predictions must be before kickoff. Latest submission counts. Matches going to tie-breaker will only be considered up to the end of extra-time.
                         </li>
                     </ul>
                 </div>

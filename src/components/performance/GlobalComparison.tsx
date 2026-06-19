@@ -1,0 +1,261 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { Profile, Prediction, Match } from '@/types/database';
+
+interface GlobalComparisonProps {
+    profile: Profile;
+    predictions: Prediction[]; // User's predictions
+    allProfiles: Profile[];
+    allPredictions: Prediction[];
+    finishedMatches: Match[];
+}
+
+interface MatchStat {
+    match: Match;
+    userPoints: number;
+    globalMean: number;
+    diff: number;
+}
+
+export default function GlobalComparison({ profile, predictions, allProfiles, allPredictions, finishedMatches }: GlobalComparisonProps) {
+    const [isTableOpen, setIsTableOpen] = useState(false);
+
+    const stats = useMemo(() => {
+        const totalFinishedMatches = finishedMatches.length;
+
+        // --- User Stats ---
+        const userFinishedPreds = predictions.filter(p => finishedMatches.some(m => m.id === p.match_id));
+        const userCoverage = totalFinishedMatches > 0 ? (userFinishedPreds.length / totalFinishedMatches) * 100 : 0;
+        const userPointsArray = userFinishedPreds.map(p => p.points || 0);
+        const userMean = userPointsArray.length > 0 ? userPointsArray.reduce((a, b) => a + b, 0) / userPointsArray.length : 0;
+        const userPerfectHits = userPointsArray.filter(p => p === 5).length; // assuming 5 is perfect
+
+        // --- Global Stats ---
+        const globalFinishedPreds = allPredictions.filter(p => finishedMatches.some(m => m.id === p.match_id));
+        
+        const globalCoverage = (totalFinishedMatches > 0 && allProfiles.length > 0) 
+            ? (globalFinishedPreds.length / (totalFinishedMatches * allProfiles.length)) * 100 
+            : 0;
+
+        const globalPointsArray = globalFinishedPreds.map(p => p.points || 0);
+        const globalMean = globalPointsArray.length > 0 ? globalPointsArray.reduce((a, b) => a + b, 0) / globalPointsArray.length : 0;
+        
+        const globalPerfectHits = allProfiles.length > 0 ? globalPointsArray.filter(p => p === 5).length / allProfiles.length : 0;
+
+        // Percentile rank
+        const sortedProfiles = [...allProfiles].sort((a, b) => b.total_points - a.total_points);
+        const rank = sortedProfiles.findIndex(p => p.id === profile.id) + 1;
+        const percentile = allProfiles.length > 1 ? ((allProfiles.length - rank) / (allProfiles.length - 1)) * 100 : 100;
+
+        // --- Match-wise Stats ---
+        const matchWiseStats: MatchStat[] = finishedMatches.map(match => {
+            const userPred = userFinishedPreds.find(p => p.match_id === match.id);
+            const userPoints = userPred?.points || 0;
+
+            const globalPredsForMatch = globalFinishedPreds.filter(p => p.match_id === match.id);
+            const globalMeanForMatch = globalPredsForMatch.length > 0 
+                ? globalPredsForMatch.reduce((acc, p) => acc + (p.points || 0), 0) / globalPredsForMatch.length 
+                : 0;
+
+            return {
+                match,
+                userPoints,
+                globalMean: globalMeanForMatch,
+                diff: userPoints - globalMeanForMatch
+            };
+        }).sort((a, b) => new Date(b.match.kickoff).getTime() - new Date(a.match.kickoff).getTime());
+
+        // Find outliers
+        let topPerformance = null;
+        let worstPerformance = null;
+
+        if (matchWiseStats.length > 0) {
+            // Sort by difference
+            const sortedByDiff = [...matchWiseStats].sort((a, b) => b.diff - a.diff);
+            if (sortedByDiff[0].diff > 0) {
+                topPerformance = sortedByDiff[0];
+            }
+            if (sortedByDiff[sortedByDiff.length - 1].diff < 0) {
+                worstPerformance = sortedByDiff[sortedByDiff.length - 1];
+            }
+        }
+
+        return {
+            userMean,
+            globalMean,
+            userCoverage,
+            globalCoverage,
+            userPerfectHits,
+            globalPerfectHits,
+            percentile,
+            rank,
+            totalUsers: allProfiles.length,
+            matchWiseStats,
+            topPerformance,
+            worstPerformance
+        };
+    }, [profile, predictions, allProfiles, allPredictions, finishedMatches]);
+
+    return (
+        <div className="space-y-6">
+            <div className="glass-card p-6 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-indigo-200/50">
+                <div className="text-center">
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">Global Standing</h3>
+                    <div className="text-4xl md:text-5xl font-black text-indigo-600 my-4">
+                        Top {Math.max(1, 100 - stats.percentile).toFixed(0)}%
+                    </div>
+                    <p className="text-slate-600 font-medium">
+                        You are rank <span className="font-bold text-slate-800">#{stats.rank}</span> out of {stats.totalUsers} predictors.
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="glass-card p-5">
+                    <div className="text-sm text-slate-500 font-bold mb-4 text-center">MEAN SCORE</div>
+                    <div className="flex justify-between items-end mb-2">
+                        <div className="text-center w-1/2">
+                            <div className="text-2xl font-black text-indigo-600">{stats.userMean.toFixed(2)}</div>
+                            <div className="text-xs text-slate-400 mt-1">You</div>
+                        </div>
+                        <div className="text-center w-1/2">
+                            <div className="text-2xl font-black text-slate-400">{stats.globalMean.toFixed(2)}</div>
+                            <div className="text-xs text-slate-400 mt-1">Global Avg</div>
+                        </div>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2 mt-4 flex overflow-hidden">
+                        <div className="bg-indigo-500 h-2" style={{ width: `${Math.min(100, (stats.userMean / (Math.max(stats.userMean, stats.globalMean) || 1)) * 100)}%` }}></div>
+                        <div className="bg-slate-300 h-2" style={{ width: `${Math.min(100, (stats.globalMean / (Math.max(stats.userMean, stats.globalMean) || 1)) * 100)}%` }}></div>
+                    </div>
+                </div>
+
+                <div className="glass-card p-5">
+                    <div className="text-sm text-slate-500 font-bold mb-4 text-center">COVERAGE</div>
+                    <div className="flex justify-between items-end mb-2">
+                        <div className="text-center w-1/2">
+                            <div className="text-2xl font-black text-purple-600">{stats.userCoverage.toFixed(0)}%</div>
+                            <div className="text-xs text-slate-400 mt-1">You</div>
+                        </div>
+                        <div className="text-center w-1/2">
+                            <div className="text-2xl font-black text-slate-400">{stats.globalCoverage.toFixed(0)}%</div>
+                            <div className="text-xs text-slate-400 mt-1">Global Avg</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass-card p-5">
+                    <div className="text-sm text-slate-500 font-bold mb-4 text-center">PERFECT HITS (+5)</div>
+                    <div className="flex justify-between items-end mb-2">
+                        <div className="text-center w-1/2">
+                            <div className="text-2xl font-black text-emerald-600">{stats.userPerfectHits}</div>
+                            <div className="text-xs text-slate-400 mt-1">You</div>
+                        </div>
+                        <div className="text-center w-1/2">
+                            <div className="text-2xl font-black text-slate-400">{stats.globalPerfectHits.toFixed(1)}</div>
+                            <div className="text-xs text-slate-400 mt-1">Global Avg</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Catchy Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {stats.topPerformance && (
+                    <div className="glass-card p-5 bg-emerald-50/50 border-emerald-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">🚀</div>
+                            <div>
+                                <h4 className="font-black text-emerald-700 text-lg uppercase tracking-wide">The Outperformer</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    You scored <span className="font-bold text-emerald-600">+{stats.topPerformance.userPoints}</span> when the global average was a measly <span className="font-bold text-slate-500">{stats.topPerformance.globalMean.toFixed(1)}</span>.
+                                </p>
+                                <div className="mt-2 inline-block px-3 py-1 bg-white rounded-full text-xs font-bold text-slate-700 shadow-sm border border-slate-100">
+                                    {stats.topPerformance.match.team_a} vs {stats.topPerformance.match.team_b}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {stats.worstPerformance && (
+                    <div className="glass-card p-5 bg-red-50/50 border-red-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">📉</div>
+                            <div>
+                                <h4 className="font-black text-red-700 text-lg uppercase tracking-wide">Missed The Boat</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Everyone else scored an average of <span className="font-bold text-slate-500">{stats.worstPerformance.globalMean.toFixed(1)}</span> but you only got <span className="font-bold text-red-600">+{stats.worstPerformance.userPoints}</span>.
+                                </p>
+                                <div className="mt-2 inline-block px-3 py-1 bg-white rounded-full text-xs font-bold text-slate-700 shadow-sm border border-slate-100">
+                                    {stats.worstPerformance.match.team_a} vs {stats.worstPerformance.match.team_b}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Collapsible Match-wise Table */}
+            <div className="glass-card overflow-hidden">
+                <button 
+                    onClick={() => setIsTableOpen(!isTableOpen)}
+                    className="w-full flex items-center justify-between p-5 hover:bg-slate-50 transition-colors"
+                >
+                    <span className="font-bold text-slate-800 text-lg">Match-wise Comparison</span>
+                    <span className="text-slate-400">
+                        {isTableOpen ? (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg>
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        )}
+                    </span>
+                </button>
+
+                {isTableOpen && (
+                    <div className="border-t border-slate-100">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="bg-slate-50/50">
+                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider">Match</th>
+                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider text-center">Your Score</th>
+                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider text-center">Global Mean</th>
+                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Diff</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.matchWiseStats.map((stat, idx) => (
+                                        <tr key={stat.match.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-slate-50/30'}`}>
+                                            <td className="px-4 py-3">
+                                                <div className="font-bold text-slate-700 text-sm">{stat.match.team_a} vs {stat.match.team_b}</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className={`font-black ${stat.userPoints > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>+{stat.userPoints}</span>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <span className="font-bold text-slate-500">{stat.globalMean.toFixed(1)}</span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <span className={`font-bold text-sm ${stat.diff > 0 ? 'text-emerald-600' : stat.diff < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                                                    {stat.diff > 0 ? '+' : ''}{stat.diff.toFixed(1)}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {stats.matchWiseStats.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="px-4 py-8 text-center text-slate-500 text-sm">
+                                                No finished matches yet.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+

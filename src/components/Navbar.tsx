@@ -51,6 +51,9 @@ export default function Navbar() {
                 <div className="hidden lg:flex gap-8 items-center font-bold">
                     <Link href="/" className="text-sm hover:text-indigo-600 transition-colors uppercase tracking-wider">Games</Link>
                     <Link href="/leaderboard" className="text-sm hover:text-indigo-600 transition-colors uppercase tracking-wider">Leaderboard</Link>
+                    {user && (
+                        <Link href="/performance" className="text-sm hover:text-indigo-600 transition-colors uppercase tracking-wider">Performance</Link>
+                    )}
                     {(role === 'owner' || role === 'admin') && (
                         <Link href="/admin" className="text-sm text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-widest border-b-2 border-indigo-600/20">Admin</Link>
                     )}
@@ -111,6 +114,11 @@ export default function Navbar() {
                             <Link href="/leaderboard" onClick={() => setIsMenuOpen(false)} className="text-lg font-bold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-3">
                                 🏆 Leaderboard
                             </Link>
+                            {user && (
+                                <Link href="/performance" onClick={() => setIsMenuOpen(false)} className="text-lg font-bold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-3">
+                                    📊 Performance
+                                </Link>
+                            )}
                             {(role === 'owner' || role === 'admin') && (
                                 <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="text-lg font-bold text-indigo-600 flex items-center gap-3">
                                     ⚙️ Admin Dashboard
