@@ -13,8 +13,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(12);
   const [search, setSearch] = useState('');
+  const [showOldMatches, setShowOldMatches] = useState(false);
 
-  const filteredMatches = matches.filter(match =>
+  const finishedMatches = matches.filter(m => m.status === 'finished');
+  const upcomingMatches = matches.filter(m => m.status !== 'finished');
+  const displayedFinished = showOldMatches ? finishedMatches : finishedMatches.slice(-3);
+  const combinedMatches = [...displayedFinished, ...upcomingMatches];
+
+  const filteredMatches = combinedMatches.filter(match =>
     match.team_a.toLowerCase().includes(search.toLowerCase()) ||
     match.team_b.toLowerCase().includes(search.toLowerCase()) ||
     match.venue.toLowerCase().includes(search.toLowerCase())
@@ -113,6 +119,27 @@ export default function Home() {
           />
         </div>
       </section>
+
+      {finishedMatches.length > 3 && !search && (
+        <div className="relative flex items-center py-4">
+          <div className="flex-grow border-t border-slate-200/60"></div>
+          <button
+            onClick={() => setShowOldMatches(!showOldMatches)}
+            className="flex items-center gap-2 px-6 py-2.5 mx-4 rounded-full bg-white/80 backdrop-blur-sm text-indigo-600 font-bold text-sm hover:bg-indigo-50 hover:text-indigo-700 transition-all shadow-sm border border-indigo-100/50 hover:border-indigo-200 hover:shadow-md group"
+          >
+            {showOldMatches ? 'Hide Old Matches' : `Show All ${finishedMatches.length} Old Matches`}
+            <svg 
+              className={`w-4 h-4 text-indigo-500 transition-transform duration-300 ${showOldMatches ? 'rotate-180' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div className="flex-grow border-t border-slate-200/60"></div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMatches.slice(0, visibleCount).map((match) => (
