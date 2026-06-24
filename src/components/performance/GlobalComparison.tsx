@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Profile, Prediction, Match } from '@/types/database';
+import MatchPointboardModal from './MatchPointboardModal';
 
 interface GlobalComparisonProps {
     profile: Profile;
@@ -20,6 +21,7 @@ interface MatchStat {
 
 export default function GlobalComparison({ profile, predictions, allProfiles, allPredictions, finishedMatches }: GlobalComparisonProps) {
     const [isTableOpen, setIsTableOpen] = useState(false);
+    const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
     const stats = useMemo(() => {
         const totalFinishedMatches = finishedMatches.length;
@@ -217,34 +219,44 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="bg-slate-50/50">
-                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider">Match</th>
-                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider text-center">Your Score</th>
-                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider text-center">Global Mean</th>
-                                        <th className="px-4 py-3 font-bold text-slate-500 text-xs uppercase tracking-wider text-right">Diff</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-bold text-slate-500 text-[10px] md:text-xs uppercase tracking-wider">Match</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-bold text-slate-500 text-[10px] md:text-xs uppercase tracking-wider text-center">Score</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-bold text-slate-500 text-[10px] md:text-xs uppercase tracking-wider text-center">Mean</th>
+                                        <th className="px-2 md:px-4 py-2 md:py-3 font-bold text-slate-500 text-[10px] md:text-xs uppercase tracking-wider text-right">Diff</th>
+                                        <th className="px-1 md:px-4 py-2 md:py-3"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {stats.matchWiseStats.map((stat, idx) => (
-                                        <tr key={stat.match.id} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? '' : 'bg-slate-50/30'}`}>
-                                            <td className="px-4 py-3">
-                                                <div className="font-bold text-slate-700 text-sm">{stat.match.team_a} vs {stat.match.team_b}</div>
+                                        <tr 
+                                            key={stat.match.id} 
+                                            className={`border-b border-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group ${idx % 2 === 0 ? '' : 'bg-slate-50/30'}`}
+                                            onClick={() => setSelectedMatch(stat.match)}
+                                        >
+                                            <td className="px-2 md:px-4 py-2 md:py-3">
+                                                <div className="font-bold text-slate-700 text-[11px] md:text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-[200px] md:max-w-xs" title={`${stat.match.team_a} vs ${stat.match.team_b}`}>
+                                                    {stat.match.team_a} <span className="text-slate-400 font-normal mx-0.5">vs</span> {stat.match.team_b}
+                                                </div>
                                             </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`font-black ${stat.userPoints > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>+{stat.userPoints}</span>
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center">
+                                                <span className={`font-black text-xs md:text-base ${stat.userPoints > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>+{stat.userPoints}</span>
                                             </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className="font-bold text-slate-500">{stat.globalMean.toFixed(1)}</span>
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-center">
+                                                <span className="font-bold text-slate-500 text-[11px] md:text-sm">{stat.globalMean.toFixed(1)}</span>
                                             </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <span className={`font-bold text-sm ${stat.diff > 0 ? 'text-emerald-600' : stat.diff < 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                                            <td className="px-2 md:px-4 py-2 md:py-3 text-right">
+                                                <span className={`font-bold text-[11px] md:text-sm ${stat.diff > 0 ? 'text-emerald-600' : stat.diff < 0 ? 'text-red-500' : 'text-slate-400'}`}>
                                                     {stat.diff > 0 ? '+' : ''}{stat.diff.toFixed(1)}
                                                 </span>
+                                            </td>
+                                            <td className="px-1 md:px-4 py-2 md:py-3 text-right">
+                                                <svg className="w-4 h-4 md:w-5 md:h-5 text-slate-300 inline-block group-hover:text-indigo-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                                             </td>
                                         </tr>
                                     ))}
                                     {stats.matchWiseStats.length === 0 && (
                                         <tr>
-                                            <td colSpan={4} className="px-4 py-8 text-center text-slate-500 text-sm">
+                                            <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-sm">
                                                 No finished matches yet.
                                             </td>
                                         </tr>
@@ -255,6 +267,15 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
                     </div>
                 )}
             </div>
+
+            {selectedMatch && (
+                <MatchPointboardModal
+                    match={selectedMatch}
+                    allProfiles={allProfiles}
+                    allPredictions={allPredictions}
+                    onClose={() => setSelectedMatch(null)}
+                />
+            )}
         </div>
     );
 }

@@ -73,7 +73,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
     };
 
     return (
-        <div className="glass-card p-4 md:p-6 flex flex-col gap-6">
+        <div className="glass-card p-2 md:p-6 flex flex-col gap-3 md:gap-6">
             <div className="flex justify-between items-center text-[10px] md:text-xs text-slate-500 font-medium">
                 <div className="flex gap-2 divide-x divide-slate-200 overflow-hidden">
                     <span className="whitespace-nowrap">{istTime} (IST)</span>
@@ -88,21 +88,23 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
             </div>
 
             <div className="flex justify-between items-center gap-2 md:gap-4">
-                <div className="flex-1 text-right font-bold text-base md:text-xl line-clamp-2 leading-tight">{match.team_a}</div>
+                <div className="flex-1 text-right font-bold text-xs md:text-xl leading-tight flex items-center justify-end">
+                    <span>{match.team_a}</span>
+                </div>
 
-                <div className="flex gap-1.5 md:gap-2 items-center flex-shrink-0">
+                <div className="flex gap-1 md:gap-2 items-center flex-shrink-0">
                     <input
                         type="number"
-                        className="input-field w-10 md:w-12 h-9 md:h-11 p-0 text-center text-lg md:text-xl font-bold bg-white/5"
+                        className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 p-0 text-center text-base md:text-xl font-bold bg-white/5"
                         value={predA}
                         onChange={(e) => setPredA(e.target.value)}
                         disabled={isExpired || !userId}
                         placeholder="-"
                     />
-                    <span className="text-slate-400 text-xl md:text-2xl font-light">:</span>
+                    <span className="text-slate-400 text-lg md:text-2xl font-light">:</span>
                     <input
                         type="number"
-                        className="input-field w-10 md:w-12 h-9 md:h-11 p-0 text-center text-lg md:text-xl font-bold bg-white/5"
+                        className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 p-0 text-center text-base md:text-xl font-bold bg-white/5"
                         value={predB}
                         onChange={(e) => setPredB(e.target.value)}
                         disabled={isExpired || !userId}
@@ -110,7 +112,9 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                     />
                 </div>
 
-                <div className="flex-1 text-left font-bold text-base md:text-xl line-clamp-2 leading-tight">{match.team_b}</div>
+                <div className="flex-1 text-left font-bold text-xs md:text-xl leading-tight flex items-center justify-start">
+                    <span>{match.team_b}</span>
+                </div>
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t border-slate-100">
