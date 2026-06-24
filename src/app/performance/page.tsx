@@ -46,16 +46,29 @@ export default function PerformancePage() {
                 setFinishedMatches(matchesData);
             }
 
-            // Fetch all predictions
-            // Note: For a very large app, fetching all predictions might not be scalable.
-            // But for a small group/app, this is fine and allows dynamic client-side stats.
-            const { data: predictionsData } = await supabase
-                .from('predictions')
-                .select('*');
-            
-            if (predictionsData) {
-                setAllPredictions(predictionsData);
+            // Fetch all predictions in chunks to avoid the 1000 rows limit
+            let allFetchedPredictions: Prediction[] = [];
+            let from = 0;
+            const step = 1000;
+            let hasMore = true;
+
+            while (hasMore) {
+                const { data } = await supabase
+                    .from('predictions')
+                    .select('*')
+                    .range(from, from + step - 1);
+                
+                if (data && data.length > 0) {
+                    allFetchedPredictions = [...allFetchedPredictions, ...data];
+                    from += step;
+                }
+                
+                if (!data || data.length < step) {
+                    hasMore = false;
+                }
             }
+            
+            setAllPredictions(allFetchedPredictions);
 
             setLoading(false);
         }

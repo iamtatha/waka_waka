@@ -95,7 +95,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                 <div className="flex gap-1 md:gap-2 items-center flex-shrink-0">
                     <input
                         type="number"
-                        className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 p-0 text-center text-base md:text-xl font-bold bg-white/5"
+                        className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 !p-0 text-center text-base md:text-xl font-bold bg-white/5"
                         value={predA}
                         onChange={(e) => setPredA(e.target.value)}
                         disabled={isExpired || !userId}
@@ -104,7 +104,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                     <span className="text-slate-400 text-lg md:text-2xl font-light">:</span>
                     <input
                         type="number"
-                        className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 p-0 text-center text-base md:text-xl font-bold bg-white/5"
+                        className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 !p-0 text-center text-base md:text-xl font-bold bg-white/5"
                         value={predB}
                         onChange={(e) => setPredB(e.target.value)}
                         disabled={isExpired || !userId}

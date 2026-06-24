@@ -51,9 +51,56 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
         const percentile = allProfiles.length > 1 ? ((allProfiles.length - rank) / (allProfiles.length - 1)) * 100 : 100;
 
         // --- Match-wise Stats ---
+        const teamPoints: Record<string, number> = {};
+        const scorelineCounts: Record<string, number> = {};
+        let totalPredictedGoals = 0;
+        let totalActualGoals = 0;
+        let predictedDraws = 0;
+        let heartbreaks = 0;
+        
+        let maxGoalsPredicted = -1;
+        let wildestPred: Prediction | null = null;
+        let wildestMatch: Match | null = null;
+        
+        let cleanSheetsPredicted = 0;
+        let actualCleanSheets = 0;
+        let zeroPointMatches = 0;
+        let teamAWinsPredicted = 0;
+        let teamBWinsPredicted = 0;
+
         const matchWiseStats: MatchStat[] = finishedMatches.map(match => {
             const userPred = userFinishedPreds.find(p => p.match_id === match.id);
             const userPoints = userPred?.points || 0;
+
+            teamPoints[match.team_a] = (teamPoints[match.team_a] || 0) + userPoints;
+            teamPoints[match.team_b] = (teamPoints[match.team_b] || 0) + userPoints;
+
+            if (userPred) {
+                const sl = `${userPred.pred_a}-${userPred.pred_b}`;
+                scorelineCounts[sl] = (scorelineCounts[sl] || 0) + 1;
+                const goals = userPred.pred_a + userPred.pred_b;
+                totalPredictedGoals += goals;
+                
+                if (userPred.pred_a === userPred.pred_b) predictedDraws++;
+                if (userPoints === 3) heartbreaks++;
+                
+                if (goals > maxGoalsPredicted) {
+                    maxGoalsPredicted = goals;
+                    wildestPred = userPred;
+                    wildestMatch = match;
+                }
+
+                if (userPred.pred_a === 0 || userPred.pred_b === 0) cleanSheetsPredicted++;
+                if (userPoints === 0) zeroPointMatches++;
+                if (userPred.pred_a > userPred.pred_b) teamAWinsPredicted++;
+                else if (userPred.pred_b > userPred.pred_a) teamBWinsPredicted++;
+                
+                if (match.score_a === 0 || match.score_b === 0) actualCleanSheets++;
+
+                if (match.score_a !== null && match.score_b !== null) {
+                    totalActualGoals += (match.score_a + match.score_b);
+                }
+            }
 
             const globalPredsForMatch = globalFinishedPreds.filter(p => p.match_id === match.id);
             const globalMeanForMatch = globalPredsForMatch.length > 0 
@@ -71,6 +118,26 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
         // Find outliers
         let topPerformance = null;
         let worstPerformance = null;
+
+        const maxTeamPoints = Object.keys(teamPoints).length > 0 ? Math.max(...Object.values(teamPoints)) : 0;
+        const bestTeams = Object.keys(teamPoints).filter(t => teamPoints[t] === maxTeamPoints && maxTeamPoints > 0);
+
+        const minTeamPoints = Object.keys(teamPoints).length > 0 ? Math.min(...Object.values(teamPoints)) : 0;
+        const kryptoniteTeams = Object.keys(teamPoints).filter(t => teamPoints[t] === minTeamPoints);
+
+        let favoriteScoreline: string | null = null;
+        let maxScorelineCount = 0;
+        Object.entries(scorelineCounts).forEach(([sl, count]) => {
+            if (count > maxScorelineCount) {
+                maxScorelineCount = count;
+                favoriteScoreline = sl;
+            }
+        });
+
+        const actualDraws = finishedMatches.filter(m => m.score_a !== null && m.score_b !== null && m.score_a === m.score_b).length;
+
+        const totalZeros = globalFinishedPreds.filter(p => p.points === 0).length;
+        const globalZeroAverage = allProfiles.length > 0 ? totalZeros / allProfiles.length : 0;
 
         if (matchWiseStats.length > 0) {
             // Sort by difference
@@ -95,7 +162,27 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
             totalUsers: allProfiles.length,
             matchWiseStats,
             topPerformance,
-            worstPerformance
+            worstPerformance,
+            bestTeams,
+            maxTeamPoints,
+            kryptoniteTeams,
+            minTeamPoints,
+            favoriteScoreline,
+            maxScorelineCount,
+            totalPredictedGoals,
+            totalActualGoals,
+            heartbreaks,
+            predictedDraws,
+            actualDraws,
+            wildestPred,
+            wildestMatch,
+            maxGoalsPredicted,
+            cleanSheetsPredicted,
+            actualCleanSheets,
+            zeroPointMatches,
+            globalZeroAverage,
+            teamAWinsPredicted,
+            teamBWinsPredicted
         };
     }, [profile, predictions, allProfiles, allPredictions, finishedMatches]);
 
@@ -162,7 +249,7 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
             </div>
 
             {/* Catchy Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {stats.topPerformance && (
                     <div className="glass-card p-5 bg-emerald-50/50 border-emerald-100">
                         <div className="flex items-start gap-3">
@@ -195,6 +282,126 @@ export default function GlobalComparison({ profile, predictions, allProfiles, al
                         </div>
                     </div>
                 )}
+                {stats.bestTeams && stats.bestTeams.length > 0 && (
+                    <div className="glass-card p-5 bg-amber-50/50 border-amber-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">🏆</div>
+                            <div>
+                                <h4 className="font-black text-amber-700 text-lg uppercase tracking-wide">Lucky Charm</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    You scored a massive <span className="font-bold text-amber-600">+{stats.maxTeamPoints}</span> points in matches featuring <span className="font-bold text-slate-700">{stats.bestTeams.join(', ')}</span>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {stats.kryptoniteTeams && stats.kryptoniteTeams.length > 0 && (
+                    <div className="glass-card p-5 bg-purple-50/50 border-purple-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">👻</div>
+                            <div>
+                                <h4 className="font-black text-purple-700 text-lg uppercase tracking-wide">The Kryptonite</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Matches with <span className="font-bold text-slate-700">{stats.kryptoniteTeams.join(', ')}</span> yielded your lowest total: <span className="font-bold text-purple-600">+{stats.minTeamPoints}</span> pts.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {stats.favoriteScoreline && (
+                    <div className="glass-card p-5 bg-blue-50/50 border-blue-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">🎯</div>
+                            <div>
+                                <h4 className="font-black text-blue-700 text-lg uppercase tracking-wide">Mr. Predictable</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    Your favorite scoreline to predict is <span className="font-bold text-blue-600">{stats.favoriteScoreline}</span>. You've picked it <span className="font-bold text-slate-700">{stats.maxScorelineCount}</span> times.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {stats.totalPredictedGoals > 0 && (
+                    <div className="glass-card p-5 bg-pink-50/50 border-pink-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">⚽</div>
+                            <div>
+                                <h4 className="font-black text-pink-700 text-lg uppercase tracking-wide">Goal Whisperer</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    You've predicted <span className="font-bold text-pink-600">{stats.totalPredictedGoals}</span> total goals so far. The actual matches had <span className="font-bold text-slate-700">{stats.totalActualGoals}</span> goals.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div className="glass-card p-5 bg-orange-50/50 border-orange-100">
+                    <div className="flex items-start gap-3">
+                        <div className="text-3xl">💔</div>
+                        <div>
+                            <h4 className="font-black text-orange-700 text-lg uppercase tracking-wide">Heartbreaks</h4>
+                            <p className="text-sm text-slate-600 mt-1">
+                                You got the winner and goal difference right but missed the exact score by a whisker <span className="font-bold text-orange-600">{stats.heartbreaks}</span> times (3 pts).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="glass-card p-5 bg-teal-50/50 border-teal-100">
+                    <div className="flex items-start gap-3">
+                        <div className="text-3xl">🤝</div>
+                        <div>
+                            <h4 className="font-black text-teal-700 text-lg uppercase tracking-wide">The Fence Sitter</h4>
+                            <p className="text-sm text-slate-600 mt-1">
+                                You predicted <span className="font-bold text-teal-600">{stats.predictedDraws}</span> draws, while there have been <span className="font-bold text-slate-700">{stats.actualDraws}</span> actual draws in finished games.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {stats.wildestMatch && stats.wildestPred && (
+                    <div className="glass-card p-5 bg-rose-50/50 border-rose-100">
+                        <div className="flex items-start gap-3">
+                            <div className="text-3xl">🤯</div>
+                            <div>
+                                <h4 className="font-black text-rose-700 text-lg uppercase tracking-wide">Wildest Prediction</h4>
+                                <p className="text-sm text-slate-600 mt-1">
+                                    You predicted a massive <span className="font-bold text-rose-600">{stats.maxGoalsPredicted}</span> goals in <span className="font-bold text-slate-700">{stats.wildestMatch.team_a} vs {stats.wildestMatch.team_b}</span> with a score of <span className="font-bold text-rose-600">{stats.wildestPred.pred_a}-{stats.wildestPred.pred_b}</span>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <div className="glass-card p-5 bg-slate-50/50 border-slate-200">
+                    <div className="flex items-start gap-3">
+                        <div className="text-3xl">🛡️</div>
+                        <div>
+                            <h4 className="font-black text-slate-700 text-lg uppercase tracking-wide">Clean Sheet Lover</h4>
+                            <p className="text-sm text-slate-600 mt-1">
+                                You predicted <span className="font-bold text-slate-800">{stats.cleanSheetsPredicted}</span> clean sheets, while there were actually <span className="font-bold text-slate-700">{stats.actualCleanSheets}</span> in the matches you predicted.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="glass-card p-5 bg-stone-50/50 border-stone-200">
+                    <div className="flex items-start gap-3">
+                        <div className="text-3xl">🍩</div>
+                        <div>
+                            <h4 className="font-black text-stone-700 text-lg uppercase tracking-wide">The Zero Club</h4>
+                            <p className="text-sm text-stone-600 mt-1">
+                                You scored absolutely nothing in <span className="font-bold text-stone-800">{stats.zeroPointMatches}</span> matches. The global average is <span className="font-bold text-stone-500">{stats.globalZeroAverage.toFixed(1)}</span> goose eggs per person.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div className="glass-card p-5 bg-lime-50/50 border-lime-100">
+                    <div className="flex items-start gap-3">
+                        <div className="text-3xl">🏠</div>
+                        <div>
+                            <h4 className="font-black text-lime-700 text-lg uppercase tracking-wide">Home Bias</h4>
+                            <p className="text-sm text-slate-600 mt-1">
+                                You backed "Team A" (Home) to win <span className="font-bold text-lime-600">{stats.teamAWinsPredicted}</span> times and "Team B" (Away) to win <span className="font-bold text-emerald-600">{stats.teamBWinsPredicted}</span> times.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Collapsible Match-wise Table */}
