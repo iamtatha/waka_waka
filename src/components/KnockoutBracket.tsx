@@ -58,8 +58,8 @@ export default function KnockoutBracket({ matches, userId }: KnockoutBracketProp
         const match = matches.find(m => m.match_number === matchNumber);
         if (!match) return { teamA: null, teamB: null };
 
-        let teamA = match.team_a;
-        let teamB = match.team_b;
+        let teamA: string | null = match.team_a;
+        let teamB: string | null = match.team_b;
 
         if (teamA.startsWith('TBD (Winner Match ')) {
             const dep = parseInt(teamA.replace('TBD (Winner Match ', ''));
