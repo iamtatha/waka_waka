@@ -5,6 +5,7 @@ export interface Profile {
     total_points: number;
     role?: 'owner' | 'admin' | null;
     is_disabled?: boolean;
+    bracket_picks?: Record<string, string> | null;
 }
 
 export interface Match {

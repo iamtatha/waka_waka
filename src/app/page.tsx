@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Match, Prediction } from '@/types/database';
 import MatchCard from '@/components/MatchCard';
+import KnockoutBracket from '@/components/KnockoutBracket';
 import { User } from '@supabase/supabase-js';
 
 export default function Home() {
@@ -14,7 +15,7 @@ export default function Home() {
   const [visibleCount, setVisibleCount] = useState(12);
   const [search, setSearch] = useState('');
   const [showOldMatches, setShowOldMatches] = useState(false);
-  const [activeTab, setActiveTab] = useState<'groups' | 'knockouts'>('knockouts');
+  const [activeTab, setActiveTab] = useState<'groups' | 'knockouts' | 'mania'>('knockouts');
 
   const filteredByTab = matches.filter(m => 
     activeTab === 'groups' ? (!m.stage || m.stage === 'group-stage') : (m.stage && m.stage !== 'group-stage')
@@ -140,6 +141,12 @@ export default function Home() {
           >
             Knockouts
           </button>
+          <button
+            onClick={() => setActiveTab('mania')}
+            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'mania' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+            Knockout Mania
+          </button>
         </div>
 
         {activeTab === 'knockouts' && (
@@ -149,59 +156,65 @@ export default function Home() {
         )}
       </div>
 
-      {finishedMatches.length > 3 && !search && (
-        <div className="relative flex items-center py-4">
-          <div className="flex-grow border-t border-slate-200/60"></div>
-          <button
-            onClick={() => setShowOldMatches(!showOldMatches)}
-            className="flex items-center gap-2 px-6 py-2.5 mx-4 rounded-full bg-white/80 backdrop-blur-sm text-indigo-600 font-bold text-sm hover:bg-indigo-50 hover:text-indigo-700 transition-all shadow-sm border border-indigo-100/50 hover:border-indigo-200 hover:shadow-md group"
-          >
-            {showOldMatches ? 'Hide Old Matches' : `Show All ${finishedMatches.length} Old Matches`}
-            <svg 
-              className={`w-4 h-4 text-indigo-500 transition-transform duration-300 ${showOldMatches ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div className="flex-grow border-t border-slate-200/60"></div>
-        </div>
-      )}
+      {activeTab === 'mania' ? (
+        <KnockoutBracket matches={matches} userId={user?.id ?? null} />
+      ) : (
+        <>
+          {finishedMatches.length > 3 && !search && (
+            <div className="relative flex items-center py-4">
+              <div className="flex-grow border-t border-slate-200/60"></div>
+              <button
+                onClick={() => setShowOldMatches(!showOldMatches)}
+                className="flex items-center gap-2 px-6 py-2.5 mx-4 rounded-full bg-white/80 backdrop-blur-sm text-indigo-600 font-bold text-sm hover:bg-indigo-50 hover:text-indigo-700 transition-all shadow-sm border border-indigo-100/50 hover:border-indigo-200 hover:shadow-md group"
+              >
+                {showOldMatches ? 'Hide Old Matches' : `Show All ${finishedMatches.length} Old Matches`}
+                <svg 
+                  className={`w-4 h-4 text-indigo-500 transition-transform duration-300 ${showOldMatches ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className="flex-grow border-t border-slate-200/60"></div>
+            </div>
+          )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMatches.slice(0, visibleCount).map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            userId={user?.id ?? null}
-            existingPrediction={predictions.find(p => p.match_id === match.id) ?? null}
-          />
-        ))}
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMatches.slice(0, visibleCount).map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                userId={user?.id ?? null}
+                existingPrediction={predictions.find(p => p.match_id === match.id) ?? null}
+              />
+            ))}
+          </div>
 
-      {visibleCount < filteredMatches.length && (
-        <div className="flex justify-center pb-10">
-          <button
-            onClick={() => setVisibleCount(prev => prev + 12)}
-            className="premium-button px-10 py-3 text-lg"
-          >
-            Show More Matches
-          </button>
-        </div>
-      )}
+          {visibleCount < filteredMatches.length && (
+            <div className="flex justify-center pb-10">
+              <button
+                onClick={() => setVisibleCount(prev => prev + 12)}
+                className="premium-button px-10 py-3 text-lg"
+              >
+                Show More Matches
+              </button>
+            </div>
+          )}
 
-      {filteredMatches.length === 0 && (
-        <div className="text-center py-20 glass-card">
-          <p className="text-slate-400 font-medium">No matches found for "{search}".</p>
-          <button
-            onClick={() => setSearch('')}
-            className="text-indigo-600 font-bold mt-2 hover:underline"
-          >
-            Clear Search
-          </button>
-        </div>
+          {filteredMatches.length === 0 && (
+            <div className="text-center py-20 glass-card">
+              <p className="text-slate-400 font-medium">No matches found for "{search}".</p>
+              <button
+                onClick={() => setSearch('')}
+                className="text-indigo-600 font-bold mt-2 hover:underline"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
