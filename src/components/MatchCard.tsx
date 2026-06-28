@@ -3,6 +3,7 @@
 import { Match, Prediction } from '@/types/database';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getFlagUrl } from '@/lib/flags';
 
 interface MatchCardProps {
     match: Match;
@@ -28,6 +29,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
     });
     const isExpired = kickoffDate < new Date();
     const isTBD = match.team_a.includes('TBD') || match.team_b.includes('TBD');
+    const isKnockout = match.stage && match.stage !== 'group-stage';
 
     useEffect(() => {
         if (existingPrediction) {
@@ -92,8 +94,11 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
             </div>
 
             <div className="flex justify-between items-center gap-2 md:gap-4">
-                <div className="flex-1 text-right font-bold text-xs md:text-xl leading-tight flex items-center justify-end">
-                    <span>{match.team_a}</span>
+                <div className="flex-1 text-right font-bold text-xs md:text-base lg:text-lg leading-tight flex items-center justify-end gap-2">
+                    <span className="line-clamp-2">{match.team_a}</span>
+                    {isKnockout && getFlagUrl(match.team_a) && (
+                        <img src={getFlagUrl(match.team_a)!} alt={`${match.team_a} flag`} className="w-5 h-3 md:w-6 md:h-4 object-cover rounded-sm shadow-sm shrink-0" />
+                    )}
                 </div>
 
                 <div className="flex gap-1 md:gap-2 items-center flex-shrink-0">
@@ -116,8 +121,11 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                     />
                 </div>
 
-                <div className="flex-1 text-left font-bold text-xs md:text-xl leading-tight flex items-center justify-start">
-                    <span>{match.team_b}</span>
+                <div className="flex-1 text-left font-bold text-xs md:text-base lg:text-lg leading-tight flex items-center justify-start gap-2">
+                    {isKnockout && getFlagUrl(match.team_b) && (
+                        <img src={getFlagUrl(match.team_b)!} alt={`${match.team_b} flag`} className="w-5 h-3 md:w-6 md:h-4 object-cover rounded-sm shadow-sm shrink-0" />
+                    )}
+                    <span className="line-clamp-2">{match.team_b}</span>
                 </div>
             </div>
 
