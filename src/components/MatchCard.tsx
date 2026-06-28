@@ -27,6 +27,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
         hour12: true
     });
     const isExpired = kickoffDate < new Date();
+    const isTBD = match.team_a.includes('TBD') || match.team_b.includes('TBD');
 
     useEffect(() => {
         if (existingPrediction) {
@@ -76,7 +77,10 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
         <div className="glass-card p-2 md:p-6 flex flex-col gap-3 md:gap-6">
             <div className="flex justify-between items-center text-[10px] md:text-xs text-slate-500 font-medium">
                 <div className="flex gap-2 divide-x divide-slate-200 overflow-hidden">
-                    <span className="whitespace-nowrap">{istTime} (IST)</span>
+                    {match.match_number && (
+                        <span className="whitespace-nowrap font-bold text-slate-700">M{match.match_number}</span>
+                    )}
+                    <span className={`whitespace-nowrap ${match.match_number ? 'pl-2' : ''}`}>{istTime} (IST)</span>
                     <span className="pl-2 uppercase tracking-wider truncate hidden sm:inline">{match.venue}</span>
                 </div>
                 <span className={`px-2 py-0.5 md:py-1 rounded capitalize text-[10px] md:text-xs ${match.status === 'live' ? 'bg-red-500/20 text-red-500' :
@@ -98,7 +102,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                         className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 !p-0 text-center text-base md:text-xl font-bold bg-white/5"
                         value={predA}
                         onChange={(e) => setPredA(e.target.value)}
-                        disabled={isExpired || !userId}
+                        disabled={isExpired || !userId || isTBD}
                         placeholder="-"
                     />
                     <span className="text-slate-400 text-lg md:text-2xl font-light">:</span>
@@ -107,7 +111,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                         className="input-field w-8 sm:w-10 md:w-12 h-8 sm:h-9 md:h-11 !p-0 text-center text-base md:text-xl font-bold bg-white/5"
                         value={predB}
                         onChange={(e) => setPredB(e.target.value)}
-                        disabled={isExpired || !userId}
+                        disabled={isExpired || !userId || isTBD}
                         placeholder="-"
                     />
                 </div>
@@ -121,6 +125,8 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                 <div className="text-[10px] md:text-sm">
                     {match.status === 'finished' ? (
                         <span className="text-slate-500 font-medium">Result: <b className="text-slate-900">{match.score_a} - {match.score_b}</b></span>
+                    ) : isTBD ? (
+                        <span className="text-slate-400 italic">Waiting for teams</span>
                     ) : isExpired ? (
                         <span className="text-orange-600/80 font-medium">Closed</span>
                     ) : userId ? (
@@ -130,7 +136,7 @@ export default function MatchCard({ match, userId, existingPrediction }: MatchCa
                     )}
                 </div>
 
-                {!isExpired && userId && (
+                {!isExpired && userId && !isTBD && (
                     <button
                         onClick={handleSave}
                         disabled={loading || !predA || !predB}

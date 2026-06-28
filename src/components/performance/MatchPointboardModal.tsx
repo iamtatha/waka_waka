@@ -84,9 +84,7 @@ export default function MatchPointboardModal({ match, allProfiles, allPrediction
                                             </div>
                                             <div>
                                                 <div className="font-bold text-slate-700">{item.display_name}</div>
-                                                <div className="text-xs font-medium text-slate-500 mt-0.5">
-                                                    Predicted: <span className="font-bold text-slate-700">{item.pred_a} - {item.pred_b}</span>
-                                                </div>
+
                                             </div>
                                         </div>
                                         <div className="text-right">

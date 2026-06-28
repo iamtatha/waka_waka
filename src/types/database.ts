@@ -16,6 +16,11 @@ export interface Match {
     score_a: number | null;
     score_b: number | null;
     status: 'upcoming' | 'live' | 'finished';
+    match_number?: number | null;
+    stage?: string | null;
+    home_dependency?: number | null;
+    away_dependency?: number | null;
+    penalty_winner?: 'team_a' | 'team_b' | null;
 }
 
 export interface Prediction {

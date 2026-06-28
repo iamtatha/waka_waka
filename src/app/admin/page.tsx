@@ -65,8 +65,8 @@ export default function AdminPage() {
         }
     };
 
-    const handleUpdateScore = async (matchId: string, scoreA: any, scoreB: any, status: string) => {
-        console.log('Attempting update for ID:', matchId, 'Scores:', scoreA, scoreB, 'Status:', status);
+    const handleUpdateScore = async (matchId: string, scoreA: any, scoreB: any, status: string, penaltyWinner: string) => {
+        console.log('Attempting update for ID:', matchId, 'Scores:', scoreA, scoreB, 'Status:', status, 'PenaltyWinner:', penaltyWinner);
 
         if (!matchId || matchId === 'undefined') {
             alert('Error: Match ID is missing. Please refresh the page.');
@@ -83,7 +83,8 @@ export default function AdminPage() {
             .update({
                 score_a: sA,
                 score_b: sB,
-                status: status
+                status: status,
+                penalty_winner: penaltyWinner === 'none' ? null : penaltyWinner
             })
             .eq('id', matchId);
 
@@ -128,9 +129,13 @@ export default function AdminPage() {
                     {filteredMatches.map(m => (
                         <div key={m.id} className="glass-card p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div className="flex-1">
-                                <span className="font-bold text-slate-800">{m.team_a} vs {m.team_b}</span>
+                                <span className="font-bold text-slate-800">
+                                    {m.match_number ? `M${m.match_number}: ` : ''}{m.team_a} vs {m.team_b}
+                                </span>
                                 <div className="text-xs text-slate-500">{new Date(m.kickoff).toLocaleString()}</div>
-                                <div className="text-[10px] text-slate-400 font-medium uppercase mt-1">{m.venue}</div>
+                                <div className="text-[10px] text-slate-400 font-medium uppercase mt-1">
+                                    {m.stage ? `${m.stage.replace('-', ' ')} • ` : ''}{m.venue}
+                                </div>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
@@ -161,12 +166,23 @@ export default function AdminPage() {
                                     <option value="finished">Finished</option>
                                 </select>
 
+                                <select
+                                    className="input-field h-9 py-0 text-sm font-medium w-24"
+                                    defaultValue={m.penalty_winner || 'none'}
+                                    id={`penalty-${m.id}`}
+                                >
+                                    <option value="none">No Pens</option>
+                                    <option value="team_a">{m.team_a} Won Pens</option>
+                                    <option value="team_b">{m.team_b} Won Pens</option>
+                                </select>
+
                                 <button
                                     onClick={() => {
                                         const aValue = (document.getElementById(`a-${m.id}`) as HTMLInputElement).value;
                                         const bValue = (document.getElementById(`b-${m.id}`) as HTMLInputElement).value;
                                         const s = (document.getElementById(`status-${m.id}`) as HTMLSelectElement).value;
-                                        handleUpdateScore(m.id, aValue, bValue, s);
+                                        const p = (document.getElementById(`penalty-${m.id}`) as HTMLSelectElement).value;
+                                        handleUpdateScore(m.id, aValue, bValue, s, p);
                                     }}
                                     className="flex-1 md:flex-none px-6 py-2 rounded-xl bg-indigo-600/10 hover:bg-indigo-600 text-indigo-600 hover:text-white text-sm font-bold border border-indigo-600/20 transition-all duration-300"
                                 >
