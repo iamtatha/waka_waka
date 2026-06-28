@@ -14,7 +14,7 @@ export default function Home() {
   const [visibleCount, setVisibleCount] = useState(12);
   const [search, setSearch] = useState('');
   const [showOldMatches, setShowOldMatches] = useState(false);
-  const [activeTab, setActiveTab] = useState<'groups' | 'knockouts'>('groups');
+  const [activeTab, setActiveTab] = useState<'groups' | 'knockouts'>('knockouts');
 
   const filteredByTab = matches.filter(m => 
     activeTab === 'groups' ? (!m.stage || m.stage === 'group-stage') : (m.stage && m.stage !== 'group-stage')
@@ -126,7 +126,7 @@ export default function Home() {
       </section>
 
       {/* Tabs */}
-      <div className="flex justify-center mt-6">
+      <div className="flex flex-col items-center mt-6 gap-4">
         <div className="inline-flex bg-slate-100 p-1 rounded-xl shadow-inner">
           <button
             onClick={() => setActiveTab('groups')}
@@ -141,6 +141,12 @@ export default function Home() {
             Knockouts
           </button>
         </div>
+
+        {activeTab === 'knockouts' && (
+          <div className="text-sm font-medium text-slate-500 bg-orange-50/50 py-2 px-4 rounded-xl border border-orange-100/50 text-center max-w-lg">
+            ⚠️ <span className="text-orange-700/80 font-bold">Note:</span> Predictions are considered for <strong>90 mins + Extra Time</strong> only. Penalty shootout goals do not count towards your prediction.
+          </div>
+        )}
       </div>
 
       {finishedMatches.length > 3 && !search && (
